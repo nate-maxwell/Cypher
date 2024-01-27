@@ -16,7 +16,7 @@ from PySide2 import QtCore
 
 import cypher
 import cypher.languages.python_syntax
-from cypher.components import CodeEditor
+from cypher.components import EditorTabWidget
 
 
 class CypherIDE(QtWidgets.QMainWindow):
@@ -26,11 +26,6 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.setWindowTitle('Cypher Editor')
         self.resize(1024, 768)
         cypher.set_qss(self)
-
-        self.tabs = list()
-        self.tab_highlighters = list()
-        self.current_index = 0
-        self.old_index = 0
 
         self.create_widgets()
         self.create_layout()
@@ -45,9 +40,7 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.btn_run = QtWidgets.QPushButton('Run')
 
         # Tab manager
-        self.tab_manager = QtWidgets.QTabWidget()
-        self.insert_tab(0, 'main', '')
-        self.insert_tab(-1, '+', '')
+        self.tab_manager = EditorTabWidget()
 
         # Output browser
         self.output_widget = QtWidgets.QWidget()
@@ -82,31 +75,6 @@ class CypherIDE(QtWidgets.QMainWindow):
 
     def create_connections(self):
         self.btn_run.clicked.connect(self.run_code)
-        self.tab_manager.currentChanged.connect(self.new_tab_connection)
-
-    def insert_tab(self, index: int, label: str, command: str = ''):
-        tab = CodeEditor()
-        tab.setPlainText(command)
-        highlight = cypher.languages.python_syntax.PythonHighlighter(tab.document())
-
-        self.tab_manager.insertTab(index, tab, label)
-        self.tab_highlighters.append(highlight)
-        self.tabs.append(tab)
-
-        self.tab_manager.setCurrentIndex(index)
-
-    def new_tab_connection(self, index: int):
-        if index == self.tab_manager.count() - 1:
-            name, ok = QtWidgets.QInputDialog.getText(self, 'New Tab', 'Name')
-            if ok:
-                self.insert_tab(index, name, '')
-                self.old_index = self.current_index
-                self.current_index = index
-            else:
-                self.tab_manager.setCurrentIndex(self.old_index)
-        else:
-            self.old_index = index
-            self.current_index = index
 
     def run_code(self):
         """

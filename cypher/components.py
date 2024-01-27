@@ -11,6 +11,8 @@ from PySide2 import QtWidgets
 from PySide2 import QtGui
 from PySide2 import QtCore
 
+import cypher.languages.python_syntax
+
 
 class LineNumberArea(QtWidgets.QWidget):
     def __init__(self, code_editor):
@@ -25,6 +27,13 @@ class LineNumberArea(QtWidgets.QWidget):
 
 
 class CodeEditor(QtWidgets.QPlainTextEdit):
+    """
+    A code editing QPlainTextEdit. This is used for highlighting syntax
+    of code written within the text field.
+
+    A line number widget is built into the side to tell you the current
+    line number.
+    """
     def __init__(self):
         super().__init__()
         self.setTabStopDistance(QtGui.QFontMetricsF(self.font()).horizontalAdvance(' ') * 4)
@@ -113,3 +122,60 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
             selection.cursor.clearSelection()
             extraSelections.append(selection)
         self.setExtraSelections(extraSelections)
+
+
+class EditorTabWidget(QtWidgets.QTabWidget):
+    """
+    A tab handler for CodeEditor() tabs.
+    Includes new tab functionality.
+    """
+    def __init__(self):
+        super().__init__()
+
+        self.tabs = list()
+        self.tab_highlighters = list()
+        self.current_index = 0
+        self.old_index = 0
+
+        self.insert_tab(0, 'new', '')
+        self.insert_tab(-1, '+', '')
+
+        self.currentChanged.connect(self.new_tab_connection)
+
+    def insert_tab(self, index: int, label: str, command: str = ''):
+        """
+        Inserts a tab at the given index named after the given label.
+        Can be given a command if loading text from a file.
+
+        Args:
+            index: The index to add the tab at.
+            label: The name of the tab.
+            command: Any pre-written python code to add.
+        """
+        tab = CodeEditor()
+        tab.setPlainText(command)
+        highlight = cypher.languages.python_syntax.PythonHighlighter(tab.document())
+
+        self.insertTab(index, tab, label)
+        self.tab_highlighters.append(highlight)
+        self.tabs.append(tab)
+
+        self.setCurrentIndex(index)
+
+    def new_tab_connection(self, index: int):
+        """
+        If the + tab was clicked, then ask the user what to name the new tab.
+        Then if ok was clicked, insert a new tab with the label before the + tab.
+        Otherwise, if cancel was clicked, go back to the previous tab.
+        """
+        if index == self.count() - 1:
+            name, ok = QtWidgets.QInputDialog.getText(self, 'New Tab', 'Name')
+            if ok:
+                self.insert_tab(index, name, '')
+                self.old_index = self.current_index
+                self.current_index = index
+            else:
+                self.setCurrentIndex(self.old_index)
+        else:
+            self.old_index = index
+            self.current_index = index
