@@ -1,2 +1,2 @@
 # Cypher
-Cypher text editor for writing code.
+Cypher text editor for writing python code.
