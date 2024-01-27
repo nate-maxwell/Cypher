@@ -28,6 +28,8 @@ class CypherIDE(QtWidgets.QMainWindow):
 
         self.tabs = list()
         self.tab_highlighters = list()
+        self.current_index = 0
+        self.old_index = 0
 
         self.create_widgets()
         self.create_layout()
@@ -79,7 +81,7 @@ class CypherIDE(QtWidgets.QMainWindow):
 
     def create_connections(self):
         self.btn_run.clicked.connect(self.run_code)
-        self.tab_manager.currentChanged.connect(self.new_tab)
+        self.tab_manager.currentChanged.connect(self.new_tab_connection)
 
     def insert_tab(self, index: int, label: str, command: str = ''):
         tab = CodeEditor()
@@ -92,11 +94,18 @@ class CypherIDE(QtWidgets.QMainWindow):
 
         self.tab_manager.setCurrentIndex(index)
 
-    def new_tab(self, index: int):
+    def new_tab_connection(self, index: int):
         if index == self.tab_manager.count() - 1:
             name, ok = QtWidgets.QInputDialog.getText(self, 'New Tab', 'Name')
             if ok:
                 self.insert_tab(index, name, '')
+                self.old_index = self.current_index
+                self.current_index = index
+            else:
+                self.tab_manager.setCurrentIndex(self.old_index)
+        else:
+            self.old_index = index
+            self.current_index = index
 
     def run_code(self):
         """
