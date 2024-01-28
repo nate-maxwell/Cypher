@@ -6,6 +6,7 @@
     `2024-01-27` - Init.
 """
 
+
 import contextlib
 import json
 import sys
@@ -42,7 +43,9 @@ class CypherEditor(QtWidgets.QMainWindow):
 
         self.setWindowTitle('Cypher Editor')
         self.resize(1024, 768)
-        # cypher.set_qss(self)
+
+        self.setWindowIcon(QtGui.QIcon(Path(RESOURCE_PATH, 'ICON_CypherSimple_1024.png').as_posix()))
+        cypher.set_qss(self)
 
         self._create_widgets()
         self._create_layout()
