@@ -24,6 +24,7 @@ import cypher
 from cypher.components import EditorTabWidget
 from cypher.components import FolderTree
 
+
 MODULE_PATH = Path(__file__).parent
 SESSION_DATA_PATH = Path(MODULE_PATH, 'session_data.json')
 RESOURCE_PATH = Path(Path(__file__).parent, 'resources')
