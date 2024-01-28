@@ -134,7 +134,10 @@ class CypherIDE(QtWidgets.QMainWindow):
         Closes the current tabs and opens the selected folder. A dialog prompting the user
         if they would like to save open tabs will determine if tabs get saved or not.
         """
-        path = Path(str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory')))
+        file = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory')
+        if not file:
+            return
+        path = Path(file)
 
         if self.tab_manager.tab_paths:
             save = QtWidgets.QMessageBox.question(self, 'Save Existing', 'Would you like to save opened files?',
