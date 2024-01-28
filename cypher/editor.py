@@ -130,6 +130,10 @@ class CypherIDE(QtWidgets.QMainWindow):
                 print('File not found or inaccessible.')
 
     def open_project(self):
+        """
+        Closes the current tabs and opens the selected folder. A dialog prompting the user
+        if they would like to save open tabs will determine if tabs get saved or not.
+        """
         path = Path(str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory')))
 
         if self.tab_manager.tab_paths:
@@ -146,7 +150,8 @@ class CypherIDE(QtWidgets.QMainWindow):
     def save_files(self):
         self.tab_manager.save_files()
 
-    def open_about(self):
+    @staticmethod
+    def open_about():
         webbrowser.open('https://github.com/nate-maxwell/Cypher')
 
     def run_code(self):
