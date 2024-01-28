@@ -46,7 +46,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         self.resize(1024, 768)
 
         self.setWindowIcon(QtGui.QIcon(Path(RESOURCE_PATH, 'ICON_CypherSimple_1024.png').as_posix()))
-        cypher.set_qss(self)
+        cypher.set_stylesheet(self)
 
         self.GEO_PATH = Path(os.getenv('USERPROFILE'), f'{self.windowTitle()}settingsFile.ini')
         # Restore previous session geometry
