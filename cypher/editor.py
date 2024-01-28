@@ -7,6 +7,7 @@
 """
 
 
+import os
 import contextlib
 import json
 import sys
@@ -46,6 +47,11 @@ class CypherEditor(QtWidgets.QMainWindow):
 
         self.setWindowIcon(QtGui.QIcon(Path(RESOURCE_PATH, 'ICON_CypherSimple_1024.png').as_posix()))
         cypher.set_qss(self)
+
+        self.GEO_PATH = Path(os.getenv('USERPROFILE'), f'{self.windowTitle()}settingsFile.ini')
+        if self.GEO_PATH.exists():
+            geo_obj = QtCore.QSettings(self.GEO_PATH.as_posix(), QtCore.QSettings.IniFormat)
+            self.restoreGeometry(geo_obj.value('windowGeometry'))
 
         self._create_widgets()
         self._create_layout()
@@ -134,6 +140,8 @@ class CypherEditor(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         """Overrides the close tool event to save the tabs and geometry."""
         self.save_session_data()
+        geo_obj = QtCore.QSettings(self.GEO_PATH.as_posix(), QtCore.QSettings.IniFormat)
+        geo_obj.setValue('windowGeometry', self.saveGeometry())
         super(CypherEditor, self).closeEvent(event)
 
     def save_session_data(self):
