@@ -26,7 +26,7 @@ class JsonHighlighter(QtGui.QSyntaxHighlighter):
 
         # numeric value
         char_format = QtGui.QTextCharFormat()
-        char_format.setForeground(QtCore.Qt.darkBlue)
+        char_format.setForeground(QtCore.Qt.blue)
         char_format.setFontWeight(QtGui.QFont.Bold)
         pattern = QtCore.QRegExp("([-0-9.]+)(?!([^\"]*\"[\\s]*\\:))")
 
@@ -36,7 +36,6 @@ class JsonHighlighter(QtGui.QSyntaxHighlighter):
         # key
         char_format = QtGui.QTextCharFormat()
         pattern = QtCore.QRegExp("(\"[^\"]*\")\\s*\\:")
-        # char_format.setForeground(QtCore.Qt.darkMagenta)
         char_format.setFontWeight(QtGui.QFont.Bold)
 
         rule = HighlightRule(pattern, char_format)

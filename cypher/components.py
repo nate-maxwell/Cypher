@@ -15,6 +15,7 @@ from PySide2 import QtGui
 from PySide2 import QtCore
 
 import cypher.languages.python_syntax
+import cypher.languages.json_syntax
 
 
 class LineNumberArea(QtWidgets.QWidget):
@@ -151,7 +152,11 @@ class EditorTabWidget(QtWidgets.QTabWidget):
 
         tab = CodeEditor(path)
         tab.setPlainText(command)
-        cypher.languages.python_syntax.PythonHighlighter(tab.document())
+
+        if path.suffix == '.py':
+            cypher.languages.python_syntax.PythonHighlighter(tab.document())
+        elif path.suffix == '.json':
+            cypher.languages.json_syntax.JsonHighlighter(tab.document())
 
         self.insertTab(index, tab, path.name)
         self.tabs.insert(index, tab)
