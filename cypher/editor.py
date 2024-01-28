@@ -5,12 +5,12 @@
 
     `2024-01-27` - Init.
 """
-
-
+import ast
 import sys
 import time
 import contextlib
 import webbrowser
+import json
 from io import StringIO
 from pathlib import Path
 
@@ -22,9 +22,21 @@ from cypher.components import EditorTabWidget
 from cypher.components import FolderTree
 
 
-class CypherIDE(QtWidgets.QMainWindow):
+MODULE_PATH = Path(__file__).parent
+SESSION_DATA_PATH = Path(MODULE_PATH, 'session_data.json')
+
+
+class TabData(object):
+    def __init__(self, index: int, path: Path, active: bool, command: str):
+        self.index = index
+        self.path = path
+        self.active = active
+        self.command = command
+
+
+class CypherEditor(QtWidgets.QMainWindow):
     def __init__(self):
-        super(CypherIDE, self).__init__()
+        super(CypherEditor, self).__init__()
 
         self.setWindowTitle('Cypher Editor')
         self.resize(1024, 768)
@@ -35,6 +47,8 @@ class CypherIDE(QtWidgets.QMainWindow):
         self._create_menu_actions()
         self._create_menu_bar()
         self._create_connections()
+
+        self.load_previous_session_data()
 
     def _create_widgets(self):
         self.widget_main = QtWidgets.QWidget()
@@ -112,6 +126,53 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.action_save_files.triggered.connect(self.save_files)
         self.action_about.triggered.connect(self.open_about)
 
+    def closeEvent(self, event):
+        """Overrides the close tool event to save the tabs and geometry."""
+        self.save_session_data()
+        super(CypherEditor, self).closeEvent(event)
+
+    def save_session_data(self):
+        """Save all currently open tab values."""
+        tab_data = []
+        active_index = self.tab_manager.currentIndex()
+
+        for i in range(self.tab_manager.count()):
+            tab = self.tab_manager.tabs[i]
+            path = self.tab_manager.tab_paths[i]
+            active = active_index == i
+
+            data = TabData(i, path, active, tab.toPlainText())
+            tab_data.append(data)
+
+        self.tab_manager.setCurrentIndex(active_index)  # Restore previous active tab
+
+        write_data = {}
+        for data in tab_data:
+            val = data.__dict__
+            path = val.pop('path')
+            write_data[path.as_posix()] = val
+
+        with open(SESSION_DATA_PATH, 'w') as f:
+            json.dump(write_data, f, indent=4)
+
+    def load_previous_session_data(self):
+        """Load the previous session's tabs and their contents."""
+        if not SESSION_DATA_PATH.exists():
+            return
+
+        with open(SESSION_DATA_PATH, 'r') as f:
+            tab_data = json.load(f)
+
+        if not tab_data:
+            return
+
+        active_index = 0
+        for path, values in tab_data.items():
+            self.tab_manager.insert_tab(values['index'], Path(path), values['command'])
+            if values['active']:
+                active_index = values['index']
+        self.tab_manager.setCurrentIndex(active_index)
+
     def open_file_in_tab(self, path: Path):
         """
         When the user clicks a file in the folder tree widget, read
@@ -180,7 +241,7 @@ class CypherIDE(QtWidgets.QMainWindow):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    window = CypherIDE()
+    window = CypherEditor()
     window.show()
     sys.exit(app.exec_())
 
