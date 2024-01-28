@@ -31,6 +31,15 @@ You can install the module from the repo with:
 python -m pip install git+https://github.com/nate-maxwell/Cypher
 ```
 
+### Starting the editor
+
+You can start the editor with the follow:
+```bash
+import cypher.editor
+
+cypher.editor.main()
+```
+
 
 ## Features
 
