@@ -5,7 +5,8 @@
 
     `2024-01-27` - Init.
 """
-
+import os
+from pathlib import Path
 
 from PySide2 import QtWidgets
 from PySide2 import QtGui
@@ -34,25 +35,15 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
     A line number widget is built into the side to tell you the current
     line number.
     """
-    def __init__(self):
+    def __init__(self, path: Path):
         super().__init__()
+        self.file_path = path
+
         self.setTabStopDistance(QtGui.QFontMetricsF(self.font()).horizontalAdvance(' ') * 4)
 
         self.line_number_area = LineNumberArea(self)
-
-        self.create_widgets()
-        self.create_layout()
         self.create_connections()
-
         self.update_line_number_area_width(0)
-
-    def create_widgets(self):
-        # Main
-        pass
-
-    def create_layout(self):
-        # Main
-        pass
 
     def create_connections(self):
         self.connect(self, QtCore.SIGNAL('blockCountChanged(int)'), self.update_line_number_area_width)
@@ -66,7 +57,7 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
         while count >= 10:
             count /= 10
             digits += 1
-        space = 3 + self.fontMetrics().width('9') * digits
+        space = 20 + self.fontMetrics().width('9') * digits
         return space
 
     def update_line_number_area_width(self, _):
@@ -101,7 +92,7 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
             if block.isVisible() and (bottom >= event.rect().top()):
                 number = str(blockNumber + 1)
                 painter.setPen(QtCore.Qt.black)
-                painter.drawText(0, top, self.line_number_area.width(), height, QtCore.Qt.AlignRight, number)
+                painter.drawText(0, top, self.line_number_area.width(), height, QtCore.Qt.AlignLeft, number)
 
             block = block.next()
             top = bottom
@@ -110,14 +101,12 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
 
     def highlight_current_line(self):
         extraSelections = []
-
         if not self.isReadOnly():
             selection = QtWidgets.QTextEdit.ExtraSelection()
 
             lineColor = QtGui.QColor(QtCore.Qt.yellow).lighter(160)
 
             selection.format.setBackground(lineColor)
-            # selection.format.setProperty(selection.QTextFormat.FullWidthSelection, True)
             selection.cursor = self.textCursor()
             selection.cursor.clearSelection()
             extraSelections.append(selection)
@@ -128,6 +117,8 @@ class EditorTabWidget(QtWidgets.QTabWidget):
     """
     A tab handler for CodeEditor() tabs.
     Includes new tab functionality.
+
+    Largely built following https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
     """
     def __init__(self):
         super().__init__()
@@ -137,45 +128,86 @@ class EditorTabWidget(QtWidgets.QTabWidget):
         self.current_index = 0
         self.old_index = 0
 
-        self.insert_tab(0, 'new', '')
-        self.insert_tab(-1, '+', '')
-
-        self.currentChanged.connect(self.new_tab_connection)
-
-    def insert_tab(self, index: int, label: str, command: str = ''):
+    def insert_tab(self, index: int, path: Path, command: str = ''):
         """
         Inserts a tab at the given index named after the given label.
         Can be given a command if loading text from a file.
 
         Args:
             index: The index to add the tab at.
-            label: The name of the tab.
+
+            path: The path to the file to create the tab from.
+
             command: Any pre-written python code to add.
         """
-        tab = CodeEditor()
+        tab = CodeEditor(path)
         tab.setPlainText(command)
         highlight = cypher.languages.python_syntax.PythonHighlighter(tab.document())
 
-        self.insertTab(index, tab, label)
+        self.insertTab(index, tab, path.name)
         self.tab_highlighters.append(highlight)
         self.tabs.append(tab)
 
         self.setCurrentIndex(index)
 
-    def new_tab_connection(self, index: int):
+
+class FolderTree(QtWidgets.QTreeWidget):
+    """A tree of files/folders for project navigation."""
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.root_path = Path()
+
+        self.setHeaderLabel('Project')
+        self.itemClicked.connect(self.clicked_connection)
+
+    def refresh_tree(self, path: Path):
         """
-        If the + tab was clicked, then ask the user what to name the new tab.
-        Then if ok was clicked, insert a new tab with the label before the + tab.
-        Otherwise, if cancel was clicked, go back to the previous tab.
+        Redraws the tree from the given path.
+
+        Args:
+            path: Which folder to recursively populate the tree from.
         """
-        if index == self.count() - 1:
-            name, ok = QtWidgets.QInputDialog.getText(self, 'New Tab', 'Name')
-            if ok:
-                self.insert_tab(index, name, '')
-                self.old_index = self.current_index
-                self.current_index = index
-            else:
-                self.setCurrentIndex(self.old_index)
+        self.clear()
+        self.root_path = path
+        invis_root_node = self.invisibleRootItem()
+        if path.is_dir():
+            root_label = path.name
         else:
-            self.old_index = index
-            self.current_index = index
+            root_label = path.parent.name
+        root_node = QtWidgets.QTreeWidgetItem(invis_root_node, [root_label])
+        root_node.setExpanded(True)
+        self._refresh_tree(path, root_node)
+
+    def _refresh_tree(self, path: Path, tree: QtWidgets.QTreeWidgetItem):
+        """
+        Recursively create a tree of QTreeWidgetItems to add to the tree widget.
+
+        Args:
+            path: The current folder/file to create a node from.
+
+            tree: The new parent to add children to.
+        """
+        for i in os.listdir(path.as_posix()):
+            new_path = Path(path, i)
+            parent_item = QtWidgets.QTreeWidgetItem(tree, [new_path.name])
+
+            if new_path.is_dir():
+                parent_item.setIcon(0, QtGui.QIcon('SP_DirIcon'))
+                self._refresh_tree(new_path, parent_item)
+            else:
+                parent_item.setIcon(0, QtGui.QIcon('SP_FileIcon'))
+
+    def clicked_connection(self, item, _):
+        """When an item is clicked, tell the main window to create a tab from it."""
+        rel_path = self._build_item_path(item, Path())
+        full_path = Path(self.root_path, rel_path)
+        self.parent.open_file_in_tab(full_path)
+
+    def _build_item_path(self, item: QtWidgets.QTreeWidgetItem, cur_path: Path) -> Path:
+        t_path = Path(item.text(0), cur_path)
+        if item.parent():
+            next_path = self._build_item_path(item.parent(), t_path)
+            return next_path
+        else:
+            return cur_path

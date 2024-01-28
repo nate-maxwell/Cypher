@@ -8,15 +8,18 @@
 
 
 import sys
+import time
 import contextlib
 from io import StringIO
+from pathlib import Path
 
 from PySide2 import QtWidgets
+from PySide2 import QtGui
 from PySide2 import QtCore
 
 import cypher
-import cypher.languages.python_syntax
 from cypher.components import EditorTabWidget
+from cypher.components import FolderTree
 
 
 class CypherIDE(QtWidgets.QMainWindow):
@@ -27,11 +30,12 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.resize(1024, 768)
         cypher.set_qss(self)
 
-        self.create_widgets()
-        self.create_layout()
-        self.create_connections()
+        self._create_widgets()
+        self._create_layout()
+        self._create_connections()
+        self._create_menu_bar()
 
-    def create_widgets(self):
+    def _create_widgets(self):
         self.widget_main = QtWidgets.QWidget()
         self.layout_main = QtWidgets.QVBoxLayout()
 
@@ -42,6 +46,10 @@ class CypherIDE(QtWidgets.QMainWindow):
         # Tab manager
         self.tab_manager = EditorTabWidget()
 
+        # File manager
+        self.file_manager = FolderTree(self)
+        self.file_manager.refresh_tree(Path(__file__).parent.parent)
+
         # Output browser
         self.output_widget = QtWidgets.QWidget()
         self.vlayout_output = QtWidgets.QVBoxLayout()
@@ -49,10 +57,11 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.lbl_output.setAlignment(QtCore.Qt.AlignLeft)
         self.tb_output = QtWidgets.QTextBrowser()
 
-        # Splitter
-        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        # Splitters
+        self.code_output_splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.file_editor_splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
 
-    def create_layout(self):
+    def _create_layout(self):
         self.setCentralWidget(self.widget_main)
         self.widget_main.setLayout(self.layout_main)
 
@@ -65,16 +74,51 @@ class CypherIDE(QtWidgets.QMainWindow):
         self.vlayout_output.addWidget(self.lbl_output)
         self.vlayout_output.addWidget(self.tb_output)
 
-        # Splitter
-        self.splitter.addWidget(self.tab_manager)
-        self.splitter.addWidget(self.output_widget)
+        # Splitters
+        self.code_output_splitter.addWidget(self.tab_manager)
+        self.code_output_splitter.addWidget(self.output_widget)
+        self.code_output_splitter.setSizes(
+            [self.code_output_splitter.size().height() * .7, self.code_output_splitter.size().height() * .3])
+        self.file_editor_splitter.addWidget(self.file_manager)
+        self.file_editor_splitter.addWidget(self.code_output_splitter)
+        self.file_editor_splitter.setSizes(
+            [self.file_editor_splitter.size().width() * .2, self.file_editor_splitter.size().width() * .8])
 
         # Main
         self.layout_main.addLayout(self.hlayout_buttons)
-        self.layout_main.addWidget(self.splitter)
+        self.layout_main.addWidget(self.file_editor_splitter)
 
-    def create_connections(self):
+    def _create_connections(self):
         self.btn_run.clicked.connect(self.run_code)
+
+    def _create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        file_menu = QtWidgets.QMenu('File', self)
+        menu_bar.addMenu(file_menu)
+
+        edit_menu = QtWidgets.QMenu('Edit', self)
+        menu_bar.addMenu(edit_menu)
+
+        help_menu = QtWidgets.QMenu('Help', self)
+        menu_bar.addMenu(help_menu)
+
+    def open_file_in_tab(self, path: Path):
+        """
+        When the user clicks a file in the folder tree widget, read
+        the contents of the file, then tell the tab manager to insert
+        a new tab with the contents of the file as the displayed command.
+
+        Args:
+            path: Path to the file to open.
+        """
+        if path.is_file():
+            try:
+                with open(path.as_posix(), 'r') as f:
+                    contents = f.read()
+                    self.tab_manager.insert_tab(self.tab_manager.count(), path, contents)
+            except FileNotFoundError:
+                print('File not found or inaccessible.')
 
     def run_code(self):
         """
@@ -84,6 +128,7 @@ class CypherIDE(QtWidgets.QMainWindow):
         code = self.tab_manager.currentWidget().toPlainText()
         output_stream = StringIO()
 
+        start = time.perf_counter()
         with contextlib.redirect_stdout(output_stream):
             try:
                 exec(code)
@@ -91,11 +136,17 @@ class CypherIDE(QtWidgets.QMainWindow):
                 print(e)
 
         output = output_stream.getvalue()
-        self.tb_output.setPlainText(output)
+        end = time.perf_counter() - start
+        output_text = f'Executed in {end} seconds:\n\n{output}'
+        self.tb_output.setPlainText(output_text)
 
 
-if __name__ == '__main__':
+def main():
     app = QtWidgets.QApplication(sys.argv)
     window = CypherIDE()
     window.show()
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
