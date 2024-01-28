@@ -32,11 +32,10 @@ QtCore.QDir.addSearchPath('ICONS', RESOURCE_PATH.as_posix())
 
 
 class TabData(object):
-    def __init__(self, index: int, path: Path, active: bool, command: str):
+    def __init__(self, index: int, path: Path, active: bool):
         self.index = index
         self.path = path
         self.active = active
-        self.command = command
 
 
 class CypherEditor(QtWidgets.QMainWindow):
@@ -182,7 +181,7 @@ class CypherEditor(QtWidgets.QMainWindow):
             path = self.tab_manager.tab_paths[i]
             active = active_index == i
 
-            data = TabData(i, path, active, tab.toPlainText())
+            data = TabData(i, path, active)
             tab_data.append(data)
 
         self.tab_manager.setCurrentIndex(active_index)  # Restore previous active tab
@@ -209,9 +208,15 @@ class CypherEditor(QtWidgets.QMainWindow):
 
         active_index = 0
         for path, values in tab_data.items():
-            self.tab_manager.insert_tab(values['index'], Path(path), values['command'])
+            file = Path(path)
+            if not file.exists():
+                continue
+            with open(file.as_posix(), 'r') as f:
+                command = f.read()
+            self.tab_manager.insert_tab(values['index'], Path(path), command)
             if values['active']:
                 active_index = values['index']
+
         self.tab_manager.setCurrentIndex(active_index)
 
     def open_file_in_tab(self, path: Path):
