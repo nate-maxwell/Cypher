@@ -162,4 +162,4 @@ cython_debug/
 
 test.py
 .idea
-save_data.txt
+session_data.txt
