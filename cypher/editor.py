@@ -141,6 +141,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         super(CypherEditor, self).closeEvent(event)
 
     def save_window_settings(self):
+        """Save the window settings, such as window size, splitter placement, etc."""
         settings_ini = QtCore.QSettings(self.settings_path.as_posix(), QtCore.QSettings.IniFormat)
 
         # Main window
@@ -151,6 +152,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         settings_ini.setValue('fileSplitterSettings', self.file_editor_splitter.saveState())
 
     def restore_window_settings(self):
+        """Restore the window settings, such as window size, splitter placement, etc."""
         # Restore previous session geometry
         if self.settings_path.exists():
             settings_data = QtCore.QSettings(self.settings_path.as_posix(), QtCore.QSettings.IniFormat)
