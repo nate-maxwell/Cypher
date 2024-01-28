@@ -5,25 +5,27 @@
 
     `2024-01-27` - Init.
 """
-import ast
+
+import contextlib
+import json
 import sys
 import time
-import contextlib
 import webbrowser
-import json
 from io import StringIO
 from pathlib import Path
 
-from PySide2 import QtWidgets
 from PySide2 import QtCore
+from PySide2 import QtWidgets
+from PySide2 import QtGui
 
 import cypher
 from cypher.components import EditorTabWidget
 from cypher.components import FolderTree
 
-
 MODULE_PATH = Path(__file__).parent
 SESSION_DATA_PATH = Path(MODULE_PATH, 'session_data.json')
+RESOURCE_PATH = Path(Path(__file__).parent, 'resources')
+QtCore.QDir.addSearchPath('ICONS', RESOURCE_PATH.as_posix())
 
 
 class TabData(object):
@@ -40,7 +42,7 @@ class CypherEditor(QtWidgets.QMainWindow):
 
         self.setWindowTitle('Cypher Editor')
         self.resize(1024, 768)
-        cypher.set_qss(self)
+        # cypher.set_qss(self)
 
         self._create_widgets()
         self._create_layout()
@@ -226,16 +228,22 @@ class CypherEditor(QtWidgets.QMainWindow):
         code = self.tab_manager.currentWidget().toPlainText()
         output_stream = StringIO()
 
-        start = time.perf_counter()
+        start = 0
         with contextlib.redirect_stdout(output_stream):
             try:
+                start = time.perf_counter()
                 exec(code)
             except Exception as e:
                 print(e)
 
         output = output_stream.getvalue()
-        end = time.perf_counter() - start
-        output_text = f'Executed in {end} seconds:\n\n{output}'
+        end = time.perf_counter()
+
+        if start:
+            elapsed_time = end - start
+            output_text = f'Executed in {elapsed_time} seconds:\n\n{output}'
+        else:
+            output_text = output
         self.tb_output.setPlainText(output_text)
 
 
