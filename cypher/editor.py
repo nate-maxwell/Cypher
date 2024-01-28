@@ -48,11 +48,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(Path(RESOURCE_PATH, 'ICON_CypherSimple_1024.png').as_posix()))
         cypher.set_stylesheet(self)
 
-        self.GEO_PATH = Path(os.getenv('USERPROFILE'), f'{self.windowTitle()}settingsFile.ini')
-        # Restore previous session geometry
-        if self.GEO_PATH.exists():
-            geo_obj = QtCore.QSettings(self.GEO_PATH.as_posix(), QtCore.QSettings.IniFormat)
-            self.restoreGeometry(geo_obj.value('windowGeometry'))
+        self.settings_path = Path(os.getenv('USERPROFILE'), f'{self.windowTitle()}WindowSettingsFile.ini')
 
         self._create_widgets()
         self._create_layout()
@@ -60,6 +56,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         self._create_menu_bar()
         self._create_connections()
         self.load_previous_session_data()
+        self.restore_window_settings()
 
     def _create_widgets(self):
         self.widget_main = QtWidgets.QWidget()
@@ -140,9 +137,30 @@ class CypherEditor(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         """Overrides the close tool event to save the tabs and geometry."""
         self.save_session_data()
-        geo_obj = QtCore.QSettings(self.GEO_PATH.as_posix(), QtCore.QSettings.IniFormat)
-        geo_obj.setValue('windowGeometry', self.saveGeometry())
+        self.save_window_settings()
         super(CypherEditor, self).closeEvent(event)
+
+    def save_window_settings(self):
+        settings_ini = QtCore.QSettings(self.settings_path.as_posix(), QtCore.QSettings.IniFormat)
+
+        # Main window
+        settings_ini.setValue('windowGeometry', self.saveGeometry())
+
+        # Splitters
+        settings_ini.setValue('codeSplitterSettings', self.code_output_splitter.saveState())
+        settings_ini.setValue('fileSplitterSettings', self.file_editor_splitter.saveState())
+
+    def restore_window_settings(self):
+        # Restore previous session geometry
+        if self.settings_path.exists():
+            settings_data = QtCore.QSettings(self.settings_path.as_posix(), QtCore.QSettings.IniFormat)
+
+            # Main window
+            self.restoreGeometry(settings_data.value('windowGeometry'))
+
+            # Splitters
+            self.code_output_splitter.restoreState(settings_data.value('codeSplitterSettings'))
+            self.file_editor_splitter.restoreState(settings_data.value('fileSplitterSettings'))
 
     def save_session_data(self):
         """Save all currently open tab values."""
