@@ -55,8 +55,8 @@ class CypherEditor(QtWidgets.QMainWindow):
         self._create_menu_actions()
         self._create_menu_bar()
         self._create_connections()
-        self.load_previous_session_data()
-        self.restore_window_settings()
+        self._load_previous_session_data()
+        self._restore_window_settings()
 
     def _create_widgets(self):
         self.widget_main = QtWidgets.QWidget()
@@ -71,7 +71,6 @@ class CypherEditor(QtWidgets.QMainWindow):
 
         # File manager
         self.file_manager = FolderTree(self)
-        self.file_manager.refresh_tree(Path(__file__).parent.parent)
 
         # Output browser
         self.output_widget = QtWidgets.QWidget()
@@ -136,11 +135,11 @@ class CypherEditor(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         """Overrides the close tool event to save the tabs and geometry."""
-        self.save_session_data()
-        self.save_window_settings()
+        self._save_session_data()
+        self._save_window_settings()
         super(CypherEditor, self).closeEvent(event)
 
-    def save_window_settings(self):
+    def _save_window_settings(self):
         """Save the window settings, such as window size, splitter placement, etc."""
         settings_ini = QtCore.QSettings(self.settings_path.as_posix(), QtCore.QSettings.IniFormat)
 
@@ -151,7 +150,10 @@ class CypherEditor(QtWidgets.QMainWindow):
         settings_ini.setValue('codeSplitterSettings', self.code_output_splitter.saveState())
         settings_ini.setValue('fileSplitterSettings', self.file_editor_splitter.saveState())
 
-    def restore_window_settings(self):
+        # File tree
+        settings_ini.setValue('fileTreePath', self.file_manager.root_path.as_posix())
+
+    def _restore_window_settings(self):
         """Restore the window settings, such as window size, splitter placement, etc."""
         # Restore previous session geometry
         if self.settings_path.exists():
@@ -164,7 +166,12 @@ class CypherEditor(QtWidgets.QMainWindow):
             self.code_output_splitter.restoreState(settings_data.value('codeSplitterSettings'))
             self.file_editor_splitter.restoreState(settings_data.value('fileSplitterSettings'))
 
-    def save_session_data(self):
+            # File tree
+            tree_path = Path(str(settings_data.value('fileTreePath')))
+            if tree_path.exists():
+                self.file_manager.refresh_tree(tree_path)
+
+    def _save_session_data(self):
         """Save all currently open tab values."""
         tab_data = []
         active_index = self.tab_manager.currentIndex()
@@ -188,7 +195,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         with open(SESSION_DATA_PATH, 'w') as f:
             json.dump(write_data, f, indent=4)
 
-    def load_previous_session_data(self):
+    def _load_previous_session_data(self):
         """Load the previous session's tabs and their contents."""
         if not SESSION_DATA_PATH.exists():
             return

@@ -188,8 +188,8 @@ class FolderTree(QtWidgets.QTreeWidget):
         super().__init__()
         self.parent = parent
         self.root_path = Path()
-
         self.setHeaderLabel('Project')
+
         self.itemClicked.connect(self.clicked_connection)
 
     def refresh_tree(self, path: Path):
