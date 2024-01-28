@@ -49,6 +49,7 @@ class CypherEditor(QtWidgets.QMainWindow):
         cypher.set_qss(self)
 
         self.GEO_PATH = Path(os.getenv('USERPROFILE'), f'{self.windowTitle()}settingsFile.ini')
+        # Restore previous session geometry
         if self.GEO_PATH.exists():
             geo_obj = QtCore.QSettings(self.GEO_PATH.as_posix(), QtCore.QSettings.IniFormat)
             self.restoreGeometry(geo_obj.value('windowGeometry'))
@@ -58,7 +59,6 @@ class CypherEditor(QtWidgets.QMainWindow):
         self._create_menu_actions()
         self._create_menu_bar()
         self._create_connections()
-
         self.load_previous_session_data()
 
     def _create_widgets(self):
