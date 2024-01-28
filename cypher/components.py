@@ -5,6 +5,8 @@
 
     `2024-01-27` - Init.
 """
+
+
 import os
 from pathlib import Path
 
@@ -123,10 +125,13 @@ class EditorTabWidget(QtWidgets.QTabWidget):
     def __init__(self):
         super().__init__()
 
-        self.tabs = list()
-        self.tab_highlighters = list()
+        self.tabs: list[CodeEditor] = list()
+        self.tab_paths: list[Path] = list()
         self.current_index = 0
         self.old_index = 0
+
+        self.setTabsClosable(True)
+        self.tabCloseRequested.connect(self.remove_tab)
 
     def insert_tab(self, index: int, path: Path, command: str = ''):
         """
@@ -140,20 +145,41 @@ class EditorTabWidget(QtWidgets.QTabWidget):
 
             command: Any pre-written python code to add.
         """
+        if path in self.tab_paths:
+            self.setCurrentIndex(self.tab_paths.index(path))
+            return
+
         tab = CodeEditor(path)
         tab.setPlainText(command)
-        highlight = cypher.languages.python_syntax.PythonHighlighter(tab.document())
+        cypher.languages.python_syntax.PythonHighlighter(tab.document())
 
         self.insertTab(index, tab, path.name)
-        self.tab_highlighters.append(highlight)
-        self.tabs.append(tab)
+        self.tabs.insert(index, tab)
+        self.tab_paths.insert(index, path)
 
         self.setCurrentIndex(index)
+
+    def remove_tab(self, index: int):
+        self.tab_paths.pop(index)
+        self.tabs.pop(index)
+        self.removeTab(index)
+
+    def save_files(self):
+        for i, p in enumerate(self.tab_paths):
+            with open(p, 'w') as out_file:
+                out_file.write(self.tabs[i].toPlainText())
+
+    def close_all_tabs(self, save: bool = False):
+        for i, p in enumerate(self.tab_paths):
+            if save:
+                with open(p, 'w') as out_file:
+                    out_file.write(self.tabs[i].toPlainText())
+            self.remove_tab(i)
 
 
 class FolderTree(QtWidgets.QTreeWidget):
     """A tree of files/folders for project navigation."""
-    def __init__(self, parent):
+    def __init__(self, parent: QtWidgets.QMainWindow):
         super().__init__()
         self.parent = parent
         self.root_path = Path()
