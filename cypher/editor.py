@@ -213,7 +213,7 @@ class CypherEditor(QtWidgets.QMainWindow):
                 continue
             with open(file.as_posix(), 'r') as f:
                 command = f.read()
-            self.tab_manager.insert_tab(values['index'], Path(path), command)
+            self.tab_manager.insert_code_tab(values['index'], Path(path), command)
             if values['active']:
                 active_index = values['index']
 
@@ -232,7 +232,7 @@ class CypherEditor(QtWidgets.QMainWindow):
             try:
                 with open(path.as_posix(), 'r') as f:
                     contents = f.read()
-                    self.tab_manager.insert_tab(self.tab_manager.count(), path, contents)
+                    self.tab_manager.insert_code_tab(self.tab_manager.count(), path, contents)
             except FileNotFoundError:
                 print('File not found or inaccessible.')
 

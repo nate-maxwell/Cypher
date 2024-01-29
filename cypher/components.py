@@ -38,17 +38,25 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
     A line number widget is built into the side to tell you the current
     line number.
     """
+    indented = QtCore.Signal(range)
+    unindented = QtCore.Signal(range)
+
     def __init__(self, path: Path):
-        super().__init__()
+        super(CodeEditor, self).__init__()
         self.file_path = path
 
         self.setTabStopDistance(QtGui.QFontMetricsF(self.font()).horizontalAdvance(' ') * 4)
 
         self.line_number_area = LineNumberArea(self)
-        self.create_connections()
+        self._create_shortcut_signals()
+        self._create_connections()
         self.update_line_number_area_width(0)
 
-    def create_connections(self):
+    def _create_shortcut_signals(self):
+        self.indented.connect(self.indent)
+        self.unindented.connect(self.unindent)
+
+    def _create_connections(self):
         self.connect(self, QtCore.SIGNAL('blockCountChanged(int)'), self.update_line_number_area_width)
         self.connect(self, QtCore.SIGNAL('updateRequest(QRect,int)'), self.update_line_number_area)
         self.connect(self, QtCore.SIGNAL('cursorPositionChanged()'), self.highlight_current_line)
@@ -115,6 +123,80 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
             extraSelections.append(selection)
         self.setExtraSelections(extraSelections)
 
+    def add_line_prefix(self, prefix: str, line: int):
+        """
+        Adds the prefix substring to the start of a line.
+
+        Args:
+            prefix: The substring to append to the start of the line.
+            line: The line number to append.
+        """
+        cursor = QtGui.QTextCursor(self.document().findBlockByLineNumber(line))
+        self.setTextCursor(cursor)
+        self.textCursor().insertText(prefix)
+
+    def remove_line_prefix(self, prefix: str, line: int):
+        """
+        Removes the prefix substring from the start of a line.
+
+        Args:
+            prefix: The substring to remove from the start of the line.
+            line: The line number to adjust.
+        """
+        cursor = QtGui.QTextCursor(self.document().findBlockByLineNumber(line))
+        cursor.select(QtGui.QTextCursor.LineUnderCursor)
+        text = cursor.selectedText()
+        if text.startswith(prefix):
+            cursor.removeSelectedText()
+            cursor.insertText(text.split(prefix, 1)[-1])
+
+    def _get_selection_range(self) -> tuple[int, int]:
+        """
+        Returns the first and last line of a continuous selection.
+
+        Returns
+            tuple[int, int]: First line number and last line number.
+        """
+        if not self.textCursor().hasSelection():
+            return 0, 0
+
+        cursor = self.textCursor()
+        start_pos = cursor.selectionStart()
+        end_pos = cursor.selectionEnd()
+
+        cursor.setPosition(start_pos)
+        first_line = cursor.blockNumber()
+        cursor.setPosition(end_pos)
+        last_line = cursor.blockNumber()
+
+        return first_line, last_line
+
+    def indent(self, lines: range):
+        """Indent the lines within the given range."""
+        for i in lines:
+            self.add_line_prefix('\t', i)
+
+    def unindent(self, lines: range):
+        """Unindent the lines within the given range."""
+        for i in lines:
+            self.remove_line_prefix('\t', i)
+
+    def keyPressEvent(self, e):
+        """Enable shortcuts in keypress event."""
+        first_line, last_line = self._get_selection_range()
+
+        if e.key() == QtCore.Qt.Key_Tab and last_line - first_line:
+            lines = range(first_line, last_line + 1)
+            self.indented.emit(lines)
+            return
+
+        if e.key() == QtCore.Qt.Key_Backtab:
+            lines = range(first_line, last_line + 1)
+            self.unindented.emit(lines)
+            return
+
+        super(CodeEditor, self).keyPressEvent(e)
+
 
 class EditorTabWidget(QtWidgets.QTabWidget):
     """
@@ -134,7 +216,7 @@ class EditorTabWidget(QtWidgets.QTabWidget):
         self.setTabsClosable(True)
         self.tabCloseRequested.connect(self.remove_tab)
 
-    def insert_tab(self, index: int, path: Path, command: str = ''):
+    def insert_code_tab(self, index: int, path: Path, command: str = ''):
         """
         Inserts a tab at the given index named after the given label.
         Can be given a command if loading text from a file.
