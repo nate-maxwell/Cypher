@@ -10,7 +10,8 @@ A fun project I work on occasionally in my spare time, originally created for me
 explore new things about PySide2 and Qt5.
 
 For now, it is a simple text editor that has only a few simple features added,
-and can only execute one tab's code at a time.
+and can only execute one tab's code at a time, allowing only for importing built-in
+modules.
 
 The goal is to eventually add a lexer and some intellisense to the project, and
 allowing for full project development.
