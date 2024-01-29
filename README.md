@@ -50,7 +50,7 @@ cypher.editor.main()
 - [x] Code syntax highlighting
 - [ ] Create new files from editor
 - [ ] Code execution with dependencies from other files
-- [ ] Code editor shot-cut support
+- [ ] Code editor short-cut support
 
 
 ## Disclaimer
