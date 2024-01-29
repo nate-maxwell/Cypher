@@ -48,8 +48,9 @@ cypher.editor.main()
 - [x] Save and load python files
 - [x] Open project directories
 - [x] Code syntax highlighting
-- [ ] Code editor shot-cut support
+- [ ] Create new files from editor
 - [ ] Code execution with dependencies from other files
+- [ ] Code editor shot-cut support
 
 
 ## Disclaimer
