@@ -29,7 +29,7 @@ The tool needs the following library to be installed:
 
 You can install the module from the repo with:
 ```bash
-python -m pip install git+https://github.com/nate-maxwell/Cypher
+pip install git+https://github.com/nate-maxwell/Cypher
 ```
 
 ### Starting the editor
