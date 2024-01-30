@@ -90,8 +90,7 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
 
     def line_number_area_paint_event(self, event):
         painter = QtGui.QPainter(self.line_number_area)
-
-        painter.fillRect(event.rect(), QtCore.Qt.lightGray)
+        painter.fillRect(event.rect(), QtGui.QColor(21, 21, 21))
 
         block = self.firstVisibleBlock()
         blockNumber = block.blockNumber()
@@ -102,7 +101,7 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
         while block.isValid() and (top <= event.rect().bottom()):
             if block.isVisible() and (bottom >= event.rect().top()):
                 number = str(blockNumber + 1)
-                painter.setPen(QtCore.Qt.black)
+                painter.setPen(QtCore.Qt.lightGray)
                 painter.drawText(0, top, self.line_number_area.width(), height, QtCore.Qt.AlignLeft, number)
 
             block = block.next()

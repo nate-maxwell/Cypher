@@ -4,7 +4,7 @@ Cypher text editor for writing python code.
 
 ## About the project
 
-<img src="https://i.imgur.com/8dnvsb3.png" alt="ui"/>
+<img src="https://i.imgur.com/fLflCU6.png" alt="ui"/>
 
 A fun project I work on occasionally in my spare time, originally created for me to
 explore new things about PySide2 and Qt5.
